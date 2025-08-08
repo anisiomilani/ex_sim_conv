@@ -58,8 +58,8 @@ volatile bool g_trip_clear = false;
 #define VIN                    12.0f       // Tensão de entrada (V)
 #define L                      0.001f      // Indutância (H)
 #define C                      0.00001f    // Capacitância (F)
-#define R_LOAD                 10.0f       // Carga resistiva (Ohm)
-
+//#define R_LOAD                 10.0f       // Carga resistiva (Ohm)
+volatile uint32_t R_LOAD = 10.0f;
 // Constantes auxiliares (evita divisões repetidas no loop)
 #define INV_L                  (DT_SIM / L)
 #define INV_C                  (DT_SIM / C)
