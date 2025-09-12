@@ -3,15 +3,35 @@
 #include "device.h"
 #include "board.h"
 
-//#define B0 0.0105325f
-//#define B1 -0.0094675f
+
+//                  Constantes pré-calculadas para transformada de clark
+//-------------------------------------------------------------------------------------------------------
+
+#define ONE_OVER_THREE_TWO 0.6666667f     // 2/3
+#define HALF 0.5f
+#define SQRT3_BY_2 0.8660254f             // sqrt(3)/2
+
+// Função reutilizável de Clarke
+typedef struct {
+    float alfa;
+    float beta;
+} ClarkeOutput;
+
+ClarkeOutput ClarkeTransform(float a, float b, float c)
+{
+    ClarkeOutput out;
+    out.alfa = ONE_OVER_THREE_TWO * (a - HALF * b - HALF * c);
+    out.beta = ONE_OVER_THREE_TWO * (SQRT3_BY_2 * b - SQRT3_BY_2 * c);
+    return out;
+}
+
+//-------------------------------------------------------------------------------------------------------------
 
 #define B0 0.000532715f
 #define B1 0.000532715f
 #define B2 0.0f
 #define A1 -1.000000f
 #define A2 0.0f
-
 
 /*
 #define B0  0.001033f
@@ -21,23 +41,98 @@
 #define A2  0.521886f
 //#define REF 8.0f
 */
+
+
 #define norm_ADC  (84.0f)/4095.0F
 #define norm_ADC_il  (8.4f)/4095.0F
-
 
 #define PWM_TOP 5000U  // deve coincidir com TBPRD do EPWM
 #define UL 0.95f         // upper limit
 #define LL 0.05f         // lower limit
-
 
 uint16_t duty_cmp;
 
  float x[3];
  float y[3];
 
+ //variaveis que seram lidas trocar por leitura adc depois
+ //--------------------------------------------------------
+float va_pac, vb_pac, vc_pac;
+float i1_a,i1_b,i1_c;
+float va_cap,vb_cap,vc_cap;
+float i2_a,i2_b,i2_c;
+float Vdc;
+//----------------------------------------------------------
+
+float valfa_pac, vbeta_pac, i1_alfa, i1_beta, valfa_cap, vbeta_cap, i2_alfa,  i2_beta;
+
+float Vg_ab[6];
+float i1_ab[4];
+float i2_ab[4];
+float vcap_ab[4];
+float corrente_VR[2];
+int linha_op[2];
+int passado;
+float g_op;
+float Vg_ab_k1[2], Vg_ab_k2[2];
+
+#define INV_RV 0.147  //  1/RV
+
+void extrapolar_k1(float V[6], float Vk1[2]);
+void extrapolar_k2(float V[6], float Vk2[2]);
+
 
 __interrupt void Cla1Task1(void)
 {
+
+     passado = linha_op[0];
+     linha_op[1] = linha_op[0];
+     linha_op[0]=1000;
+     g_op=1000000000000000.0;
+
+//----------------------Transformadas CLARK--------------------------------------------------------------
+
+    ClarkeOutput v_pac, i1, v_cap, i2;
+
+
+    v_pac = ClarkeTransform(va_pac, vb_pac, vc_pac);
+    valfa_pac = v_pac.alfa;
+    vbeta_pac = v_pac.beta;
+
+    i1 = ClarkeTransform(i1_a, i1_b, i1_c);
+    i1_alfa = i1.alfa;
+    i1_beta = i1.beta;
+
+    v_cap = ClarkeTransform(va_cap, vb_cap, vc_cap);
+    valfa_cap = v_cap.alfa;
+    vbeta_cap = v_cap.beta;
+
+    i2 = ClarkeTransform(i2_a, i2_b, i2_c);
+    i2_alfa = i2.alfa;
+    i2_beta = i2.beta;
+
+ //---------------------------------------Redefinindo as variaveis para vetores-------------------------------------------------------------------------
+
+    Vg_ab[4] = Vg_ab[2]; Vg_ab[2] = Vg_ab[0]; Vg_ab[0] = valfa_pac;
+    Vg_ab[5] = Vg_ab[3]; Vg_ab[3] = Vg_ab[1]; Vg_ab[1] =vbeta_pac;
+
+    vcap_ab[2] = vcap_ab[0]; vcap_ab[0] =valfa_cap ;
+    vcap_ab[3] = vcap_ab[1]; vcap_ab[1] =vbeta_cap;
+
+    i1_ab[2] = i1_ab[0]; i1_ab[0] = i1_alfa;
+    i1_ab[3] = i1_ab[1]; i1_ab[1] = i1_beta;
+
+    i2_ab[2] = i2_ab[0]; i2_ab[0] = i2_alfa;
+    i2_ab[3] = i2_ab[1]; i2_ab[1] = i2_beta;
+
+//--------------------------Passo futuro k1 - extrapolação-------------------------------------------------------------------------------------
+
+
+    extrapolar_k1(Vg_ab, Vg_ab_k1);
+    extrapolar_k2(Vg_ab, Vg_ab_k2);
+
+
+//------------------------------------------------------------------------------------------------------------------
 
    fResult = ADC_readResult(ADCARESULT_BASE, ADC0_SOC0);
 
@@ -70,4 +165,16 @@ __interrupt void Cla1Task1(void)
         }
     }
 */
+}
+
+void extrapolar_k1(float V[6], float Vk1[2])
+{
+    Vk1[0] = 3.0f * V[0] - 3.0f * V[2] + V[4];
+    Vk1[1] = 3.0f * V[1] - 3.0f * V[3] + V[5];
+}
+
+void extrapolar_k2(float V[6], float Vk2[2])
+{
+    Vk2[0] = 6.0f * V[0] - 8.0f * V[2] + 3.0f * V[4];
+    Vk2[1] = 6.0f * V[1] - 8.0f * V[3] + 3.0f * V[5];
 }

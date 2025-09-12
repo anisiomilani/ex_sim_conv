@@ -29,7 +29,6 @@ volatile float adcAmper;
 #pragma DATA_SECTION(REF,"Cla1ToCpuMsgRAM");
 volatile float REF = 12.0f;
 
-
 // VREF é a tensão de referência do DAC/ADC
 
 #define norm_DAC 4095.0f/(84.0f)

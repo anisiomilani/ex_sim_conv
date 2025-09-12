@@ -69,7 +69,6 @@ cla1.enable_CLA_TASK_6  = false;
 cla1.enable_CLA_TASK_5  = false;
 cla1.enable_CLA_TASK_4  = false;
 cla1.enable_CLA_TASK_3  = false;
-cla1.enable_CLA_TASK_2  = false;
 cla1.cpuint_CLA_TASK_2  = false;
 cla1.cpuint_CLA_TASK_3  = false;
 cla1.cpuint_CLA_TASK_4  = false;
@@ -79,6 +78,7 @@ cla1.cpuint_CLA_TASK_7  = false;
 cla1.cpuint_CLA_TASK_8  = false;
 cla1.trigger_CLA_TASK_1 = "CLA_TRIGGER_ADCA1";
 cla1.cpuint_CLA_TASK_1  = false;
+cla1.enable_CLA_TASK_2  = false;
 
 cmpss1.$name        = "myCMPSS0";
 cmpss1.enableModule = true;
@@ -150,8 +150,8 @@ memcfg.config_MEMCFG_SECT_LS4        = "CLA_prog";
 memcfg.config_MEMCFG_SECT_LS5        = "CLA_prog";
 
 CMD1.$name                         = "CMD0";
-CMD1.sectionMemory_cla1Prog        = ["RAMLS5"];
 CMD1.sectionMemory_claConst        = ["RAMLS1"];
 CMD1.sectionMemory_claScratchpad   = ["RAMLS1"];
 CMD1.sectionMemory_cpuToCla1MsgRAM = ["CPUTOCLA_MSGRAM"];
 CMD1.sectionMemory_cla1ToCpuMsgRAM = ["CLATOCPU_MSGRAM"];
+CMD1.sectionMemory_cla1Prog        = ["RAMLS5"];
